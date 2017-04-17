@@ -1,13 +1,15 @@
 import argparse
 from zipfile import ZipFile
 
+from feature_extraction import FeatureExtractor
+
 
 def read_and_extract_zip(filename):
     print 'Extracting {}'.format(filename)
 
     zip_file = ZipFile(filename, "r")
     for filename in zip_file.namelist():
-        print zip_file.read(filename)
+        print FeatureExtractor.get_features('cpp', zip_file.read(filename))
 
 
 
