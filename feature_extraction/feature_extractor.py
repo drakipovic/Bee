@@ -41,11 +41,11 @@ class CppFeatureExtractor(object):
 
     @property
     def lexical_features(self):
-        return CppLexicalFeatures().get_features(self.source_code)
+        return CppLexicalFeatures(self.source_code).get_features()
     
     @property
     def layout_features(self):
-        return CppLayoutFeatures().get_features(self.source_code)
+        return CppLayoutFeatures(self.source_code).get_features()
 
 
 LANGUAGE_EXTRACTORS = {

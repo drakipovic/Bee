@@ -7,10 +7,15 @@ from feature_extraction import FeatureExtractor
 def read_and_extract_zip(filename):
     print 'Extracting {}'.format(filename)
 
+    train_features = []
+    correct_class = []
     zip_file = ZipFile(filename, "r")
     for filename in zip_file.namelist():
-        print FeatureExtractor.get_features('cpp', zip_file.read(filename))
+        filename_split = filename.split('_')
+        author = "{} {}".format(filename_split[0], filename_split[1])
 
+        train_features.append(FeatureExtractor.get_features('cpp', zip_file.read(filename))[0])
+        correct_class.append(author)
 
 
 if __name__ == '__main__':
