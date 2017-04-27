@@ -9,7 +9,7 @@ class CppLexicalFeatures(object):
         self.source_code = source_code
     
     def get_features(self):
-        features = self.tokenize()
+        features = []
         features.extend(self.keyword_freq())
         features.append(self.keywords())
 
