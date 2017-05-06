@@ -1,5 +1,6 @@
 import re
 import math
+import numpy as np
 from collections import Counter
 
 
@@ -104,9 +105,40 @@ class CppLexicalFeatures(object):
         tokens = re.split('\s+', source_code)
 
         return self._ln(len(tokens), len(source_code))
-
     
     def functions(self, source_code):
         functions_count = len(re.findall('(std::)*(vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<)*\s*(int|float|long|long long|double|char|string)\s*[>]{0,1}\s*[a-zA-Z][A-Za-z0-9|_]*\(.*?\)', source_code, re.DOTALL))
+        print functions_count
 
         return self._ln(functions_count, len(source_code))
+
+    def macros(self, source_code):
+        macros = len(re.findall('#include|#define|#if|#ifndef|#ifdef|#else|#undef', source_code))
+
+        return self._ln(macros, len(source_code))
+    
+    #returns avg and stddev of lines lengths
+    def line_length_measures(self, source_code):
+        lines_length = [len(line) for line in source_code.split('\n')]
+        
+        sum_lines_length = float(sum(lines_length))
+        avg_line_length = sum_lines_length / len(lines_length)
+        
+        stddev_line_length = np.std(lines_length)
+
+        return [avg_line_length, stddev_line_length]
+        
+    #returns avg and sttdev of function parameter number
+    def function_parameters_measures(self, source_code):
+        functions = re.findall('(?:const){0,1}(?:std::){0,1}(?:vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<){0,1}[\s]*(?:int|float|long|long long|double|char|string)[\s]*[>]{0,1}[\s]*[a-zA-Z][A-Za-z0-9|_]*\(.*?\)', source_code, re.DOTALL)
+
+        parameters_length = []
+        for function in functions:
+            function_split = function.split('(')[1][:-1]
+            parameters = function_split.split(',')
+            parameters_length.append(len(parameters))
+        
+        avg_parameters = sum(parameters_length) / float(len(parameters_length))
+        stddev_parameters = np.std(parameters_length)
+
+        return [avg_parameters, stddev_parameters]

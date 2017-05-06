@@ -62,17 +62,18 @@ SOURCE_CODE_7 = """/* blablalba */
                    //jee"""
 
 
-SOURCE_CODE_8 = """#define max(a, b) a > b ? a : b
+SOURCE_CODE_8 = """#include<sctio>
+                   #define max(a, b) a > b ? a : b
                    #define MAX 1000000
                    
                    const int MAX_ITERATIONS = 100000
                    const int f()"""
 
 
-SOURCE_CODE_9 = """int f(a, b)
-                   vector<int>bla(bla, bla)
+SOURCE_CODE_9 = """int f(float a, double b)
+                   vector<int>bla(string bla, char bla)
 
-                   std::vector<string> f( iiiiaia, ianiadnia)
+                   std::vector<string> f(int iiiiaia, char ianiadnia)
 
                    queue bla(int, int)"""
 
@@ -172,3 +173,30 @@ def test_cpp_lf_tokens_returns_correct_number_of_tokens():
     tokens_count = cpp_lf.tokens(SOURCE_CODE_5)
 
     assert tokens_count == math.log(6. / len(SOURCE_CODE_5))
+
+
+def test_cpp_lf_macros_returns_correct_number_of_macros():
+    unigrams = _create_unigrams([SOURCE_CODE_8], [SOURCE_CODE_8])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_8], unigrams)
+
+    macros_count = cpp_lf.macros(SOURCE_CODE_8)
+
+    assert macros_count == math.log(3. / len(SOURCE_CODE_8))
+
+
+def test_cpp_lf_line_length_measures_returns_correct_measures():
+    unigrams = _create_unigrams([SOURCE_CODE_1], [SOURCE_CODE_1])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_1], unigrams)
+
+    line_length_measures = cpp_lf.line_length_measures(SOURCE_CODE_1)
+
+    assert line_length_measures == [29.928571428571427, 13.071038245538359]
+
+
+def test_cpp_lf_function_parameters_measures_returns_correct_measures():
+    unigrams = _create_unigrams([SOURCE_CODE_9], [SOURCE_CODE_9])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_9], unigrams)
+
+    function_parameters_measures = cpp_lf.function_parameters_measures(SOURCE_CODE_9)
+
+    assert function_parameters_measures == [2, 0]
