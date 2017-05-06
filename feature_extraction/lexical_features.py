@@ -17,6 +17,9 @@ class CppLexicalFeatures(object):
             code_features.extend(self.unigram_features(code))
             code_features.extend(self.keyword_freq(code))
             code_features.append(self.keywords(code))
+            code_features.append(self.ternary_operators(code))
+            code_features.append(self.comments(code))
+            code_features.append(self.literals(code))
 
             features.append(code_features)
         
@@ -70,4 +73,26 @@ class CppLexicalFeatures(object):
             if token in cpp_keywords:
                 keyword_counter += 1
         
-        return keyword_counter    
+        return keyword_counter
+    
+    #number of ternary operators
+    def ternary_operators(self, source_code):
+
+        ternary_count = len(re.findall(' \? ', source_code))
+
+        return math.log(ternary_count / float(len(source_code))) if ternary_count else 0
+    
+    #number of comments count
+    def comments(self, source_code):
+
+        comments_count = len(re.findall('/\*.*\*/', source_code, re.DOTALL))
+        comments_count += len(re.findall('//', source_code, re.DOTALL))
+
+        return math.log(comments_count / float(len(source_code))) if comments_count else 0
+
+    def literals(self, source_code):
+
+        literals_count = len(re.findall('#define [a-zA-Z][A-Za-z1-9|_]+ ', source_code))
+        literals_count += len(re.findall('const (int|float|long|long long|double) [a-zA-Z][A-Za-z0-9|_]+ =', source_code))
+
+        return math.log(literals_count / float(len(source_code))) if literals_count else 0
