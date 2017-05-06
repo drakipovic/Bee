@@ -2,6 +2,8 @@ import math
 import re
 from collections import Counter
 
+import numpy as np
+
 from feature_extraction import CppFeatureExtractor
 from feature_extraction.lexical_features import CppLexicalFeatures
 
@@ -95,8 +97,12 @@ def test_cpp_get_features_returns_correct_set_of_features():
 
     features = cpp_lf.get_features()
 
-    assert features == [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), 0, 0, 0], 
-                        [1, 1, 0, 1, 1, 1, 1, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0]]
+    assert features == [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), 
+                        0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), math.log(6. / len(SOURCE_CODE_4)),
+                        len(SOURCE_CODE_4), 0, 0, 0], 
+                        [1, 1, 0, 1, 1, 1, 1, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, 0, 0, 0, 
+                        math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, math.log(1. / len(SOURCE_CODE_5)), 0,
+                        math.log(6. / len(SOURCE_CODE_5)), len(SOURCE_CODE_5), 0, 0, 0]]
 
 
 def test_cpp_lf_unigram_features_returns_correct_freq_of_unigrams():

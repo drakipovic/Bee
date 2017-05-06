@@ -24,6 +24,11 @@ class CppLexicalFeatures(object):
             code_features.append(self.ternary_operators(code))
             code_features.append(self.comments(code))
             code_features.append(self.literals(code))
+            code_features.append(self.macros(code))
+            code_features.append(self.functions(code))
+            code_features.append(self.tokens(code))
+            code_features.extend(self.line_length_measures(code))
+            code_features.extend(self.function_parameters_measures(code))
 
             features.append(code_features)
         
@@ -108,7 +113,6 @@ class CppLexicalFeatures(object):
     
     def functions(self, source_code):
         functions_count = len(re.findall('(std::)*(vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<)*\s*(int|float|long|long long|double|char|string)\s*[>]{0,1}\s*[a-zA-Z][A-Za-z0-9|_]*\(.*?\)', source_code, re.DOTALL))
-        print functions_count
 
         return self._ln(functions_count, len(source_code))
 
@@ -120,7 +124,7 @@ class CppLexicalFeatures(object):
     #returns avg and stddev of lines lengths
     def line_length_measures(self, source_code):
         lines_length = [len(line) for line in source_code.split('\n')]
-        
+
         sum_lines_length = float(sum(lines_length))
         avg_line_length = sum_lines_length / len(lines_length)
         
@@ -136,9 +140,12 @@ class CppLexicalFeatures(object):
         for function in functions:
             function_split = function.split('(')[1][:-1]
             parameters = function_split.split(',')
-            parameters_length.append(len(parameters))
+            if parameters[0] != '':
+                parameters_length.append(len(parameters))
+            else:
+                parameters_length.append(0)
         
-        avg_parameters = sum(parameters_length) / float(len(parameters_length))
-        stddev_parameters = np.std(parameters_length)
+        avg_parameters = sum(parameters_length) / float(len(parameters_length)) if len(parameters_length) > 0 else 0
+        stddev_parameters = np.std(parameters_length) if len(parameters_length) > 0 else 0
 
         return [avg_parameters, stddev_parameters]
