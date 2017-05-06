@@ -69,6 +69,14 @@ SOURCE_CODE_8 = """#define max(a, b) a > b ? a : b
                    const int f()"""
 
 
+SOURCE_CODE_9 = """int f(a, b)
+                   vector<int>bla(bla, bla)
+
+                   std::vector<string> f( iiiiaia, ianiadnia)
+
+                   queue bla(int, int)"""
+
+
 def _create_unigrams(train, test):
     train.extend(test)
 
@@ -86,8 +94,9 @@ def test_cpp_get_features_returns_correct_set_of_features():
 
     features = cpp_lf.get_features()
 
-    assert features == [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], 
-                        [1, 1, 0, 1, 1, 1, 1, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]]
+    assert features == [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), 0, 0, 0], 
+                        [1, 1, 0, 1, 1, 1, 1, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0]]
+
 
 def test_cpp_lf_unigram_features_returns_correct_freq_of_unigrams():
     unigrams = _create_unigrams([SOURCE_CODE_2], [SOURCE_CODE_2])
@@ -103,6 +112,7 @@ def test_cpp_lf_keywords_freq_returns_correct_freq():
     cpp_lf = CppLexicalFeatures([SOURCE_CODE_1], unigrams)
 
     freq = cpp_lf.keyword_freq(SOURCE_CODE_1)
+    print freq
 
     assert freq == [math.log(1. / len(SOURCE_CODE_1)), math.log(1. / len(SOURCE_CODE_1)), 
                     math.log(1. / len(SOURCE_CODE_1)), math.log(1. / len(SOURCE_CODE_1)), 
@@ -116,7 +126,7 @@ def test_cpp_lf_keyword_returns_number_of_keyword_occured():
 
     keywords_count = cpp_lf.keywords(SOURCE_CODE_3)
 
-    assert keywords_count == 8
+    assert keywords_count == math.log(8. / len(SOURCE_CODE_3))
 
 
 def test_cpp_lf_ternary_operator_number_returns_correct_number_of_ternary_op():
@@ -144,3 +154,21 @@ def test_cpp_lf_literals_returns_correct_number_of_comments():
     literals_count = cpp_lf.literals(SOURCE_CODE_8)
 
     assert literals_count == math.log(2. / len(SOURCE_CODE_8))
+
+
+def test_cpp_lf_functions_returns_correct_number_of_functions():
+    unigrams = _create_unigrams([SOURCE_CODE_9], [SOURCE_CODE_9])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_9], unigrams)
+
+    function_count = cpp_lf.functions(SOURCE_CODE_9)
+
+    assert function_count == math.log(3. / len(SOURCE_CODE_9))
+
+
+def test_cpp_lf_tokens_returns_correct_number_of_tokens():
+    unigrams = _create_unigrams([SOURCE_CODE_5], [SOURCE_CODE_5])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_5], unigrams)
+
+    tokens_count = cpp_lf.tokens(SOURCE_CODE_5)
+
+    assert tokens_count == math.log(6. / len(SOURCE_CODE_5))

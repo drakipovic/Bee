@@ -6,8 +6,11 @@ from collections import Counter
 class CppLexicalFeatures(object):
 
     def __init__(self, source_code, unigrams):
-        self.source_code = source_code
+        self.source_code = source_code #list of source code
         self.unigrams = unigrams
+
+    def _ln(self, value, source_code_len):
+        return math.log(float(value) / source_code_len) if value else 0
     
     def get_features(self):
 
@@ -45,13 +48,11 @@ class CppLexicalFeatures(object):
         else_if_count = len(re.findall('else if\s*\(.*?\)', source_code, re.DOTALL))
         else_count = len(re.findall('else\s*\{.*?\}', source_code, re.DOTALL))
         switch_count = len(re.findall('switch\s*\(.*?\)', source_code, re.DOTALL))
-        
-        code_len = len(source_code)
 
-        return [math.log(if_count / float(code_len)) if if_count else 0, math.log(for_count / float(code_len)) if for_count else 0, 
-                math.log(while_count / float(code_len)) if while_count else 0, math.log(do_count / float(code_len)) if do_count else 0,
-                math.log(else_count / float(code_len)) if else_count else 0, math.log(else_if_count / float(code_len)) if else_if_count else 0,
-                math.log(switch_count / float(code_len)) if switch_count else 0]
+        return [self._ln(if_count, len(source_code)), self._ln(for_count, len(source_code)), 
+                self._ln(while_count, len(source_code)), self._ln(do_count, len(source_code)),
+                self._ln(else_count, len(source_code)), self._ln(else_if_count, len(source_code)), 
+                self._ln(switch_count, len(source_code))]
     
     #returns number of unique keywords
     def keywords(self, source_code):
@@ -73,14 +74,14 @@ class CppLexicalFeatures(object):
             if token in cpp_keywords:
                 keyword_counter += 1
         
-        return keyword_counter
+        return self._ln(keyword_counter, len(source_code))
     
     #number of ternary operators
     def ternary_operators(self, source_code):
 
         ternary_count = len(re.findall(' \? ', source_code))
 
-        return math.log(ternary_count / float(len(source_code))) if ternary_count else 0
+        return self._ln(ternary_count, len(source_code))
     
     #number of comments count
     def comments(self, source_code):
@@ -88,11 +89,24 @@ class CppLexicalFeatures(object):
         comments_count = len(re.findall('/\*.*\*/', source_code, re.DOTALL))
         comments_count += len(re.findall('//', source_code, re.DOTALL))
 
-        return math.log(comments_count / float(len(source_code))) if comments_count else 0
+        return self._ln(comments_count, len(source_code))
 
+    #returns number of literals/constants
     def literals(self, source_code):
 
         literals_count = len(re.findall('#define [a-zA-Z][A-Za-z1-9|_]+ ', source_code))
-        literals_count += len(re.findall('const (int|float|long|long long|double) [a-zA-Z][A-Za-z0-9|_]+ =', source_code))
+        literals_count += len(re.findall('const (int|float|long|long long|double|char|string) [a-zA-Z][A-Za-z0-9|_]+ =', source_code))
 
-        return math.log(literals_count / float(len(source_code))) if literals_count else 0
+        return self._ln(literals_count, len(source_code))
+
+    #returns number of word tokens
+    def tokens(self, source_code):
+        tokens = re.split('\s+', source_code)
+
+        return self._ln(len(tokens), len(source_code))
+
+    
+    def functions(self, source_code):
+        functions_count = len(re.findall('(std::)*(vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<)*\s*(int|float|long|long long|double|char|string)\s*[>]{0,1}\s*[a-zA-Z][A-Za-z0-9|_]*\(.*?\)', source_code, re.DOTALL))
+
+        return self._ln(functions_count, len(source_code))
