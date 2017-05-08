@@ -43,8 +43,7 @@ def extract_and_read_train_files(train_filename, test_filename):
 
 
 def train(ml_algorithm, train_source_code, test_source_code, train_labels, test_labels):
-    train_features = FeatureExtractor.get_features(train_source_code, test_source_code)
-    test_features = FeatureExtractor.get_features(test_source_code, train_source_code)
+    train_features, test_features = FeatureExtractor.get_features(train_source_code, test_source_code)
 
     ml_algorithm.train(train_features, test_features, train_labels, test_labels)
 

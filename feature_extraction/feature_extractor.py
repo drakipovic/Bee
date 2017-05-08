@@ -14,16 +14,16 @@ class FeatureExtractor(object):
     
     #returns lexical, layout and syntactic feature vector for a given language
     @staticmethod
-    def get_features(source_code, *args):
-        return LanguageFeatureExtractor('cpp', source_code, *args).features
+    def get_features(train_source_code, test_source_code):
+        return LanguageFeatureExtractor('cpp', train_source_code, test_source_code).features
 
 
 class LanguageFeatureExtractor(object):
     """Base class for extracting feature vector for different programming languages"""
 
-    def __init__(self, language, source_code, *args):
+    def __init__(self, language, train_source_code, test_source_code):
         try:
-            self.feature_extractor = LANGUAGE_EXTRACTORS[language](source_code, *args)
+            self.feature_extractor = LANGUAGE_EXTRACTORS[language](train_source_code, test_source_code)
         except KeyError:
             raise LanguageNotSupportedException
         
@@ -40,24 +40,21 @@ class LanguageFeatureExtractor(object):
 
 class CppFeatureExtractor(object):
 
-    def __init__(self, source_code, *args):
-        self.source_code = source_code
-        #we need this argument because we need to know all distinct unigrams before going into lexical extraction
-        self.other_source_code = deepcopy(args[0])
+    def __init__(self, train_source_code, test_source_code):
+        self.train_source_code = train_source_code
+        self.test_source_code = test_source_code
         self.unigrams = self._get_word_unigrams()
 
     @property
     def lexical_features(self):
-        return CppLexicalFeatures(self.source_code, self.unigrams).get_features()
+        return CppLexicalFeatures(self.train_source_code, self.test_source_code, self.unigrams).get_features()
     
     @property
     def layout_features(self):
-        return CppLayoutFeatures(self.source_code).get_features()
+        return CppLayoutFeatures(self.train_source_code).get_features()
     
     def _get_word_unigrams(self):
-        self.other_source_code.extend(self.source_code)
-    
-        joined_sc = " ".join(self.other_source_code)
+        joined_sc = " ".join(self.train_source_code)
 
         tokens = re.split('\s+', joined_sc)
         frequencies = Counter(tokens)

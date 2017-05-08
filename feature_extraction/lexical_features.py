@@ -6,8 +6,9 @@ from collections import Counter
 
 class CppLexicalFeatures(object):
 
-    def __init__(self, source_code, unigrams):
-        self.source_code = source_code #list of source code
+    def __init__(self, train_source_code, test_source_code, unigrams):
+        self.train_source_code = train_source_code #list of source code for training
+        self.test_source_code = test_source_code #list of source code for testing
         self.unigrams = unigrams
 
     def _ln(self, value, source_code_len):
@@ -15,8 +16,8 @@ class CppLexicalFeatures(object):
     
     def get_features(self):
 
-        features = []
-        for code in self.source_code:
+        train_features = []
+        for code in self.train_source_code:
             code_features = []
             code_features.extend(self.unigram_features(code))
             code_features.extend(self.keyword_freq(code))
@@ -30,9 +31,26 @@ class CppLexicalFeatures(object):
             code_features.extend(self.line_length_measures(code))
             code_features.extend(self.function_parameters_measures(code))
 
-            features.append(code_features)
+            train_features.append(code_features)
         
-        return features
+        test_features = []
+        for code in self.test_source_code:
+            code_features = []
+            code_features.extend(self.unigram_features(code))
+            code_features.extend(self.keyword_freq(code))
+            code_features.append(self.keywords(code))
+            code_features.append(self.ternary_operators(code))
+            code_features.append(self.comments(code))
+            code_features.append(self.literals(code))
+            code_features.append(self.macros(code))
+            code_features.append(self.functions(code))
+            code_features.append(self.tokens(code))
+            code_features.extend(self.line_length_measures(code))
+            code_features.extend(self.function_parameters_measures(code))
+
+            test_features.append(code_features)
+        
+        return train_features, test_features
     
     #returns frequency of word unigrams from source code
     def unigram_features(self, source_code):

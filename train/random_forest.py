@@ -1,46 +1,58 @@
+import pprint
+
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.metrics import accuracy_score
+
+pp = pprint.PrettyPrinter(indent=2)
 
 
 class RandomForest(object):
 
     def __init__(self):
-        self.rf = RandomForestClassifier(n_jobs=-1, n_estimators=5)
+        self.rf = RandomForestClassifier(n_jobs=-1, n_estimators=200, criterion="entropy", max_features="log2", oob_score=True)
         
     def train(self, train_features, test_features, train_labels, test_labels):
         print 'Training started...'
-        print 'Feature vector for one source code has length of {}'.format(np.array(train_features[0]).shape)
-        print 'Creating one hot vector.'
-        one_hot = self.create_one_hot(train_labels)
-        print 'One hot vector created.'
+        print 'Train feature vector has length of {}'.format(np.array(train_features).shape)
+        fs = VarianceThreshold(threshold=(0.6 * (1 - 0.6)))
+        train_features = fs.fit_transform(train_features)
+        support = fs.get_support(indices=True)
 
+        print 'Feature vector after feature selection has length of {}'.format(np.array(train_features).shape)
+        print 'Creating one hot vector from train labels.'
+        train_author_indices = self.create_author_indices(train_labels)
+        print 'One hot vector created.'
         print 'Fitting random forest...'
-        self.rf.fit(train_features, one_hot)
+        self.rf.fit(train_features, train_author_indices)
 
         print 'Predicting authors on test set.'
-        predicted_authors_oh = self.rf.predict(test_features)
-        test_oh = self.create_one_hot(test_labels)
-        predicted_authors = np.argmax(predicted_authors_oh, 1)
+        test_features = np.array(test_features)[:,np.array(support)]
+        print 'Test feature vector has length of {}'.format(np.array(test_features).shape)
+        predicted_authors_indices = self.rf.predict(test_features)
+        print predicted_authors_indices
 
-        correct = (self.indices == predicted_authors).sum()
+        test_authors_indices = self.create_author_indices(test_labels)
+        
+        print test_authors_indices
+        pp.pprint(self.seen)
 
-        print 'Score: {}'.format(correct / float(len(self.indices)))
+        accuracy = accuracy_score(test_authors_indices, predicted_authors_indices)
+        return accuracy
+        
 
-    def create_one_hot(self, authors):
-        seen = {}
+    def create_author_indices(self, authors):
+        self.seen = {}
         index = 0
         self.indices = []
 
         for author in authors:
-            if seen.get(author) != None:
-                self.indices.append(seen.get(author))
+            if self.seen.get(author) != None:
+                self.indices.append(self.seen.get(author))
             else:
                 self.indices.append(index)
-                seen[author] = index
+                self.seen[author] = index
                 index += 1
-
-        n_labels = np.max(self.indices)
-
-        one_hot = np.eye(n_labels+1)[self.indices]
-
-        return one_hot
+        
+        return self.indices

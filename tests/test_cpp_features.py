@@ -80,9 +80,7 @@ SOURCE_CODE_9 = """int f(float a, double b)
                    queue bla(int, int)"""
 
 
-def _create_unigrams(train, test):
-    train.extend(test)
-
+def _create_unigrams(train):
     joined_sc = " ".join(train)
 
     tokens = re.split('\s+', joined_sc)
@@ -92,10 +90,10 @@ def _create_unigrams(train, test):
 
 
 def test_cpp_get_features_returns_correct_set_of_features():
-    unigrams = _create_unigrams([SOURCE_CODE_4, SOURCE_CODE_5], [SOURCE_CODE_4])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_4, SOURCE_CODE_5], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_4, SOURCE_CODE_5])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_4, SOURCE_CODE_5], [], unigrams)
 
-    features = cpp_lf.get_features()
+    features, _ = cpp_lf.get_features()
 
     assert features == [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), 
                         0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), math.log(6. / len(SOURCE_CODE_4)),
@@ -106,8 +104,8 @@ def test_cpp_get_features_returns_correct_set_of_features():
 
 
 def test_cpp_lf_unigram_features_returns_correct_freq_of_unigrams():
-    unigrams = _create_unigrams([SOURCE_CODE_2], [SOURCE_CODE_2])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_2], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_2])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_2], [], unigrams)
 
     freq = cpp_lf.unigram_features(SOURCE_CODE_2)
 
@@ -115,11 +113,10 @@ def test_cpp_lf_unigram_features_returns_correct_freq_of_unigrams():
 
 
 def test_cpp_lf_keywords_freq_returns_correct_freq():
-    unigrams = _create_unigrams([SOURCE_CODE_1], [SOURCE_CODE_1])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_1], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_1])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_1], [], unigrams)
 
     freq = cpp_lf.keyword_freq(SOURCE_CODE_1)
-    print freq
 
     assert freq == [math.log(1. / len(SOURCE_CODE_1)), math.log(1. / len(SOURCE_CODE_1)), 
                     math.log(1. / len(SOURCE_CODE_1)), math.log(1. / len(SOURCE_CODE_1)), 
@@ -128,8 +125,8 @@ def test_cpp_lf_keywords_freq_returns_correct_freq():
 
 
 def test_cpp_lf_keyword_returns_number_of_keyword_occured():
-    unigrams = _create_unigrams([SOURCE_CODE_3], [SOURCE_CODE_3])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_3], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_3])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_3], [], unigrams)
 
     keywords_count = cpp_lf.keywords(SOURCE_CODE_3)
 
@@ -137,8 +134,8 @@ def test_cpp_lf_keyword_returns_number_of_keyword_occured():
 
 
 def test_cpp_lf_ternary_operator_number_returns_correct_number_of_ternary_op():
-    unigrams = _create_unigrams([SOURCE_CODE_6], [SOURCE_CODE_6])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_6], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_6])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_6], [], unigrams)
 
     ternary_count = cpp_lf.ternary_operators(SOURCE_CODE_6)
 
@@ -146,8 +143,8 @@ def test_cpp_lf_ternary_operator_number_returns_correct_number_of_ternary_op():
 
 
 def test_cpp_lf_comments_returns_correct_number_of_comments():
-    unigrams = _create_unigrams([SOURCE_CODE_7], [SOURCE_CODE_7])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_7], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_7])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_7], [], unigrams)
 
     comments_count = cpp_lf.comments(SOURCE_CODE_7)
 
@@ -155,8 +152,8 @@ def test_cpp_lf_comments_returns_correct_number_of_comments():
 
 
 def test_cpp_lf_literals_returns_correct_number_of_comments():
-    unigrams = _create_unigrams([SOURCE_CODE_8], [SOURCE_CODE_8])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_8], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_8])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_8], [], unigrams)
 
     literals_count = cpp_lf.literals(SOURCE_CODE_8)
 
@@ -164,8 +161,8 @@ def test_cpp_lf_literals_returns_correct_number_of_comments():
 
 
 def test_cpp_lf_functions_returns_correct_number_of_functions():
-    unigrams = _create_unigrams([SOURCE_CODE_9], [SOURCE_CODE_9])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_9], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_9])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_9], [], unigrams)
 
     function_count = cpp_lf.functions(SOURCE_CODE_9)
 
@@ -173,8 +170,8 @@ def test_cpp_lf_functions_returns_correct_number_of_functions():
 
 
 def test_cpp_lf_tokens_returns_correct_number_of_tokens():
-    unigrams = _create_unigrams([SOURCE_CODE_5], [SOURCE_CODE_5])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_5], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_5])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_5], [], unigrams)
 
     tokens_count = cpp_lf.tokens(SOURCE_CODE_5)
 
@@ -182,8 +179,8 @@ def test_cpp_lf_tokens_returns_correct_number_of_tokens():
 
 
 def test_cpp_lf_macros_returns_correct_number_of_macros():
-    unigrams = _create_unigrams([SOURCE_CODE_8], [SOURCE_CODE_8])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_8], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_8])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_8], [], unigrams)
 
     macros_count = cpp_lf.macros(SOURCE_CODE_8)
 
@@ -191,8 +188,8 @@ def test_cpp_lf_macros_returns_correct_number_of_macros():
 
 
 def test_cpp_lf_line_length_measures_returns_correct_measures():
-    unigrams = _create_unigrams([SOURCE_CODE_1], [SOURCE_CODE_1])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_1], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_1])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_1], [], unigrams)
 
     line_length_measures = cpp_lf.line_length_measures(SOURCE_CODE_1)
 
@@ -200,8 +197,8 @@ def test_cpp_lf_line_length_measures_returns_correct_measures():
 
 
 def test_cpp_lf_function_parameters_measures_returns_correct_measures():
-    unigrams = _create_unigrams([SOURCE_CODE_9], [SOURCE_CODE_9])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_9], unigrams)
+    unigrams = _create_unigrams([SOURCE_CODE_9])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_9], [], unigrams)
 
     function_parameters_measures = cpp_lf.function_parameters_measures(SOURCE_CODE_9)
 
