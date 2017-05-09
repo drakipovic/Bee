@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.metrics import accuracy_score
 
+
 pp = pprint.PrettyPrinter(indent=2)
 
 
@@ -40,7 +41,7 @@ class RandomForest(object):
 
         accuracy = accuracy_score(test_authors_indices, predicted_authors_indices)
         return accuracy
-        
+
 
     def create_author_indices(self, authors):
         self.seen = {}

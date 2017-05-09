@@ -1,67 +1,68 @@
 import argparse
 from zipfile import ZipFile
 
+import numpy as np
+
 from feature_extraction import FeatureExtractor
 from train.random_forest import RandomForest
 
 
-def extract_and_read_train_files(train_filename, test_filename):
-    print 'Extracting {}'.format(train_filename)
+def extract_and_read_train_files(dataset_filename):
+    print 'Extracting {}'.format(dataset_filename)
 
-    train_source_code = []
-    train_labels = []
+    source_code = []
+    labels = []
 
-    train_zip_file = ZipFile(train_filename, "r")
-    for filename in train_zip_file.namelist():
+    zip_file = ZipFile(dataset_filename, "r")
+    for filename in sorted(zip_file.namelist()):
         filename_split = filename.split('_')
         if 'cpp' not in filename_split[-1] and 'cxx' not in filename_split[-1]:
             continue
         
         author = "{} {}".format(filename_split[0].encode('utf-8'), filename_split[1].encode('utf-8'))
-        train_labels.append(author)
+        labels.append(author)
 
-        train_source_code.append(train_zip_file.read(filename))
+        source_code.append(zip_file.read(filename))
     
-    print 'Extracting {}'.format(test_filename)
+    return source_code, labels
 
-    test_source_code = []
-    test_labels = []
-    
 
-    test_zip_file = ZipFile(test_filename, "r")
-    for filename in test_zip_file.namelist():
-        filename_split = filename.split('_')
-        if 'cpp' not in filename_split[-1] and 'cxx' not in filename_split[-1]:
-            continue
+def train(ml_algorithm, source_code, labels):
+    source_code = np.array(source_code)
+    labels = np.array(labels)
+
+    k = 10
+    dataset_size = len(source_code)
+    fold_size = dataset_size / k
+    accuracy = 0
+
+    for i in range(k):
+        test_indices = np.array(range(i, len(source_code), fold_size))
         
-        author = "{} {}".format(filename_split[0].encode('utf-8'), filename_split[1].encode('utf-8'))
-        test_labels.append(author)
-
-        test_source_code.append(test_zip_file.read(filename))    
+        train_indices = []
+        for sci in range(len(source_code)):
+            if sci not in test_indices:
+                train_indices.append(sci)
+        
+        train_features, test_features = FeatureExtractor.get_features(source_code[train_indices], source_code[test_indices])
+        score = ml_algorithm.train(train_features, test_features, labels[train_indices], labels[test_indices])
+        print 'Score after {}th fold: {}'.format(i, score)
+        accuracy += score
     
-    return train_source_code, train_labels, test_source_code, test_labels
-
-
-def train(ml_algorithm, train_source_code, test_source_code, train_labels, test_labels):
-    train_features, test_features = FeatureExtractor.get_features(train_source_code, test_source_code)
-
-    ml_algorithm.train(train_features, test_features, train_labels, test_labels)
+    print 'Final score: {}'.format(accuracy / float(k))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run deanonymization bee')
 
-    parser.add_argument('--train_set', help="Train set")
-    parser.add_argument('--test_set', help="Test set")
+    parser.add_argument('--dataset', help="Dataset")
 
     args = parser.parse_args()
 
-    train_set_filename = args.train_set
-    test_set_filename = args.test_set
+    dataset_filename = args.dataset
 
-    if 'zip' in train_set_filename and 'zip' in test_set_filename:
-        train_source_code, train_labels, test_source_code, test_labels = extract_and_read_train_files(train_set_filename,
-                                                                                                        test_set_filename)
-        train(RandomForest(), train_source_code, test_source_code, train_labels, test_labels)
+    if 'zip' in dataset_filename:
+        source_code, labels = extract_and_read_train_files(dataset_filename)
+        train(RandomForest(), source_code, labels)
     else:
         print 'File can only be zip!'
