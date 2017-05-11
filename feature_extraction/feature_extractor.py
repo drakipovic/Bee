@@ -30,12 +30,16 @@ class LanguageFeatureExtractor(object):
     #returns feature vector for a language
     @property
     def features(self):
-        lexical_features = self.feature_extractor.lexical_features
-        layout_features = self.feature_extractor.layout_features
+        train_lexical_features, test_lexical_features = self.feature_extractor.lexical_features
+        train_layout_features, test_layout_features = self.feature_extractor.layout_features
         
-        features = lexical_features
+        for idx, lf in enumerate(train_lexical_features):
+            lf.extend(train_layout_features[idx])
+        
+        for idx, lf in enumerate(test_lexical_features):
+            lf.extend(test_layout_features[idx])
 
-        return features
+        return train_lexical_features, test_lexical_features
 
 
 class CppFeatureExtractor(object):
@@ -51,7 +55,7 @@ class CppFeatureExtractor(object):
     
     @property
     def layout_features(self):
-        return CppLayoutFeatures(self.train_source_code).get_features()
+        return CppLayoutFeatures(self.train_source_code, self.test_source_code).get_features()
     
     def _get_word_unigrams(self):
         joined_sc = " ".join(self.train_source_code)

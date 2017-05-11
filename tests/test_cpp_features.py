@@ -6,6 +6,7 @@ import numpy as np
 
 from feature_extraction import CppFeatureExtractor
 from feature_extraction.lexical_features import CppLexicalFeatures
+from feature_extraction.layout_features import CppLayoutFeatures
 
 
 SOURCE_CODE_1 = """#include <cstdio>
@@ -80,6 +81,22 @@ SOURCE_CODE_9 = """int f(float a, double b)
                    queue bla(int, int)"""
 
 
+SOURCE_CODE_10 = """\t\tif(a>0){}  """
+
+
+SOURCE_CODE_11 = """if(a>0)
+\t{
+\tprint a;   
+\tprint b;
+}"""
+
+
+SOURCE_CODE_12 = """if(a>0){
+                        print a;
+                    }"""
+
+
+
 def _create_unigrams(train):
     joined_sc = " ".join(train)
 
@@ -89,7 +106,7 @@ def _create_unigrams(train):
     return frequencies.keys()
 
 
-def test_cpp_get_features_returns_correct_set_of_features():
+def test_cpp_lf_get_features_returns_correct_set_of_features():
     unigrams = _create_unigrams([SOURCE_CODE_4, SOURCE_CODE_5])
     cpp_lf = CppLexicalFeatures([SOURCE_CODE_4, SOURCE_CODE_5], [], unigrams)
 
@@ -102,6 +119,14 @@ def test_cpp_get_features_returns_correct_set_of_features():
                         math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, math.log(1. / len(SOURCE_CODE_5)), 0,
                         math.log(6. / len(SOURCE_CODE_5)), len(SOURCE_CODE_5), 0, 0, 0]]
 
+
+def test_cpp_layf_get_features_returns_correct_set_of_features():
+     cpp_layf = CppLayoutFeatures([SOURCE_CODE_10], [])
+
+     features, _ = cpp_layf.get_features()
+
+     assert features == [[math.log(2. / len(SOURCE_CODE_10)), math.log(2. / len(SOURCE_CODE_10)),
+                        4. / 9, False, True]]
 
 def test_cpp_lf_unigram_features_returns_correct_freq_of_unigrams():
     unigrams = _create_unigrams([SOURCE_CODE_2])
@@ -151,7 +176,7 @@ def test_cpp_lf_comments_returns_correct_number_of_comments():
     assert comments_count == math.log(2. / len(SOURCE_CODE_7))
 
 
-def test_cpp_lf_literals_returns_correct_number_of_comments():
+def test_cpp_lf_literals_returns_tabscorrect_number_of_comments():
     unigrams = _create_unigrams([SOURCE_CODE_8])
     cpp_lf = CppLexicalFeatures([SOURCE_CODE_8], [], unigrams)
 
@@ -203,3 +228,59 @@ def test_cpp_lf_function_parameters_measures_returns_correct_measures():
     function_parameters_measures = cpp_lf.function_parameters_measures(SOURCE_CODE_9)
 
     assert function_parameters_measures == [2, 0]
+
+
+def test_cpp_layf_tabs_count_return_correct_number_of_tabs():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_10], [])
+
+    tabs_count = cpp_layf.tabs(SOURCE_CODE_10)
+
+    assert tabs_count == math.log(2. / len(SOURCE_CODE_10))
+
+
+def test_cpp_layf_spaces_count_return_correct_number_of_spaces():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_10], [])
+
+    spaces_count = cpp_layf.spaces(SOURCE_CODE_10)
+
+    assert spaces_count == math.log(2. / len(SOURCE_CODE_10))
+
+
+def test_cpp_layf_whitespace_ratio_returns_correct_ratio():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_10], [])
+
+    ratio = cpp_layf.whitespace_ratio(SOURCE_CODE_10)
+
+    assert ratio == 4. / 9
+
+
+def test_cpp_layf_new_line_before_braces_with_greater_number_of_new_lines_before_braces_returns_true():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_11], [])
+
+    new_line_before_braces = cpp_layf.new_line_before_open_brace(SOURCE_CODE_11)
+
+    assert new_line_before_braces
+
+
+def test_cpp_layf_new_line_before_braces_with_greater_number_of_close_paranthesis_lines_before_braces_returns_false():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_12], [])
+
+    new_line_before_braces = cpp_layf.new_line_before_open_brace(SOURCE_CODE_12)
+
+    assert not new_line_before_braces
+
+
+def test_cpp_layf_tabs_lead_line_with_greater_number_of_tabs_at_beginning_return_true():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_11], [])
+
+    tabs_lead_lines = cpp_layf.tabs_lead_lines(SOURCE_CODE_11)
+
+    assert tabs_lead_lines
+
+
+def test_cpp_layf_tabs_lead_line_with_greater_number_of_spaces_at_beginning_return_false():
+    cpp_layf = CppLayoutFeatures([SOURCE_CODE_12], [])
+
+    tabs_lead_lines = cpp_layf.tabs_lead_lines(SOURCE_CODE_12)
+
+    assert not tabs_lead_lines
