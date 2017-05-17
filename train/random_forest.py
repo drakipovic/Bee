@@ -11,9 +11,9 @@ pp = pprint.PrettyPrinter(indent=2)
 
 class RandomForest(object):
 
-    def __init__(self, variance_threshold=0.0, n_trees=30):
+    def __init__(self, variance_threshold=0.08):
         self.rf = RandomForestClassifier(n_jobs=-1, 
-                                        n_estimators=n_trees, 
+                                        n_estimators=400, 
                                         criterion="entropy", 
                                         max_features="log2", 
                                         oob_score=True)

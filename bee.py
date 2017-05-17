@@ -1,35 +1,46 @@
+import os
 import time
 import argparse
-from zipfile import ZipFile
+import subprocess
 from collections import defaultdict
 
 import numpy as np
 
 from feature_extraction import FeatureExtractor
 from train.random_forest import RandomForest
+from train.svm import SVM
 
 
-ALGORITHMS = {'random-forest': RandomForest}
+basedir = os.path.abspath(os.path.dirname(__file__))
+ALGORITHMS = {'random-forest': RandomForest, 'svm': SVM}
 
 
 def extract_and_read_train_files(dataset_filename):
     print 'Extracting {}'.format(dataset_filename)
 
+    os.system('mkdir dataset')
+    os.system('unzip -q {} -d dataset'.format(dataset_filename))
+
     source_code = []
     labels = []
+    ast_nodes = []
 
-    zip_file = ZipFile(dataset_filename, "r")
-    for filename in sorted(zip_file.namelist()):
+    for filename in sorted(os.listdir('dataset')):
         filename_split = filename.split('_')
         if 'cpp' not in filename_split[-1] and 'cxx' not in filename_split[-1]:
             continue
         
         author = "{} {}".format(filename_split[0].encode('utf-8'), filename_split[1].encode('utf-8'))
         labels.append(author)
+        with open(basedir + '/dataset/' + filename, 'r') as f:
+            source_code.append(f.read())
 
-        source_code.append(zip_file.read(filename))
+        ast_nodes.append(subprocess.check_output(['java', '-jar', 'CodeSensor.jar', basedir + '/dataset/' + filename]))
+
     
-    return source_code, labels
+    os.system('rm -rf dataset')
+
+    return source_code, labels, ast_nodes
 
 
 def create_accuracies_markdown_table(accuracies, n_trees):
@@ -55,10 +66,10 @@ def create_accuracies_markdown_table(accuracies, n_trees):
     return markdown
     
 
-def train(ml_algorithm, source_code, labels):
+def train(ml_algorithm, source_code, labels, ast_nodes):
     source_code = np.array(source_code)
     labels = np.array(labels)
-    print len(source_code)
+    ast_nodes = np.array(ast_nodes)
 
     try:
         algorithm_type = ALGORITHMS[ml_algorithm]
@@ -66,45 +77,37 @@ def train(ml_algorithm, source_code, labels):
         print 'Algorithm type not valid!'
         return
 
-    n_trees = [400]
-    variance_threshold = [0.08]
-    data = defaultdict(list)
+    start = time.time()
+
+    mla = algorithm_type(variance_threshold=0.08)
+    k = 5
+    code_per_author = 5
+    accuracy = 0
     
-    for nt in n_trees:
-        for vt in variance_threshold:
-            start = time.time()
-            print 'N of Trees: {} | Variance Threshold: {}'.format(nt, vt)
+    for i in range(k):
+        test_indices = []
+        it = code_per_author / k
+        for j in range(it):
+            test_indices.extend(np.array(range(i*it+j, len(source_code), code_per_author)))
+            
+        train_indices = []
+        for sci in range(len(source_code)):
+            if sci not in test_indices:
+                train_indices.append(sci)
 
-            mla = algorithm_type(n_trees=nt, variance_threshold=vt)
-            k = 10
-            code_per_author = 10
-            accuracy = 0
+        train_features, test_features = FeatureExtractor.get_features(source_code[train_indices],
+                                                                        source_code[test_indices], 
+                                                                        ast_nodes[train_indices],
+                                                                        ast_nodes[test_indices])
+        
+        score = mla.train(train_features, test_features, labels[train_indices], labels[test_indices])
+        print 'Score after {}th fold is {}'.format(i, score)
+        accuracy += score
             
-            for i in range(k):
-                test_indices = []
-                it = code_per_author / k
-                for j in range(it):
-                    test_indices.extend(np.array(range(i*it+j, len(source_code), code_per_author)))
-                    
-                train_indices = []
-                for sci in range(len(source_code)):
-                    if sci not in test_indices:
-                        train_indices.append(sci)
-                
-
-                train_features, test_features = FeatureExtractor.get_features(source_code[train_indices], source_code[test_indices])
-                
-                score = mla.train(train_features, test_features, labels[train_indices], labels[test_indices])
-                print 'Score after {}th fold is {}'.format(i, score)
-                accuracy += score
-            
-            print 'Final score: {}'.format(accuracy / float(k))
-            end = time.time() - start
-            print 'Execution time: {}'.format(end)
-            print '-----------------------------------------------'
-            data[vt].append((accuracy / float(k),end))
-            
-    print create_accuracies_markdown_table(data, n_trees)
+    print 'Final score: {}'.format(accuracy / float(k))
+    end = time.time() - start
+    print 'Execution time: {}'.format(end)
+    print '-----------------------------------------------'
 
 
 
@@ -118,7 +121,7 @@ if __name__ == '__main__':
     dataset_filename = args.dataset
 
     if 'zip' in dataset_filename:
-        source_code, labels = extract_and_read_train_files(dataset_filename)
-        train('random-forest', source_code, labels)
+        source_code, labels, ast_nodes = extract_and_read_train_files(dataset_filename)
+        train('random-forest', source_code, labels, ast_nodes)
     else:
         print 'File can only be zip!'
