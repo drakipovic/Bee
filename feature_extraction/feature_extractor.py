@@ -48,10 +48,12 @@ class CppFeatureExtractor(object):
         self.train_source_code = train_source_code
         self.test_source_code = test_source_code
         self.unigrams = self._get_word_unigrams()
+        self.variable_names = self._get_variable_names()
 
     @property
     def lexical_features(self):
-        return CppLexicalFeatures(self.train_source_code, self.test_source_code, self.unigrams).get_features()
+        return CppLexicalFeatures(self.train_source_code, self.test_source_code, 
+                                    self.unigrams, self.variable_names).get_features()
     
     @property
     def layout_features(self):
@@ -64,6 +66,63 @@ class CppFeatureExtractor(object):
         frequencies = Counter(tokens)
 
         return frequencies.keys()
+    
+    def _get_variable_names(self):
+        joined_sc = " ".join(self.train_source_code)
+
+        variables = re.findall('(?:const){0,1}(?:std::){0,1}(?:vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<){0,1}[\s]*(?:int|float|long|long long|double|char|string)[\s]*[>]{0,1}[\s]*[\*]{0,2}[a-zA-Z][A-Za-z0-9|_]*[\s]*[\(]{0,1}[=]{0,1}[\s]*[\"\'0-9a-zA-Z]*[\s]*[;|,|\)]', joined_sc, re.DOTALL)
+
+        variable_names = []
+        for var in variables:
+            if '=' in var:
+                var_split = var.split('=')
+                try:
+                    var_name = var_split[0]
+                except IndexError:
+                    continue
+                
+                try:
+                    var_name = var_split[0].split()[1]
+                except IndexError:
+                    continue
+                
+                var_name = var_name.strip()
+                variable_names.append(var_name)
+
+            elif '>' in var:
+                var_split = var.split('>')
+                if '(' in var_split[1]:
+                    try:
+                        var_name = var_split[1].split('(')[0].strip()
+                    except IndexError:
+                        continue
+
+                else:
+                    try:
+                        var_name = var_split[1].split(';')[0]
+                    except IndexError:
+                        continue
+
+                var_name = var_name.strip()
+                variable_names.append(var_name)
+            
+            else:
+                var_split = var.split()
+                try:
+                    var_name = var_split[1]
+                except IndexError:
+                    continue
+                
+                try:
+                    var_name = var_split[1].strip(',')
+                except IndexError:
+                    continue
+                    
+                var_name = var_name.strip(')')
+                var_name = var_name.strip('(')
+                variable_names.append(var_name)
+        
+        return variable_names
 
 
 LANGUAGE_EXTRACTORS = {

@@ -55,7 +55,8 @@ SOURCE_CODE_3 = """if(i > 0) with() for()\{\} int if_bla long long bla short int
 SOURCE_CODE_4 = """int main(){ cout << 'bla'; }"""
 
 
-SOURCE_CODE_5 = """#include<iostream> if(bla){ cout << 'bla'; }"""
+SOURCE_CODE_5 = """#include<iostream>
+                   if(bla){ cout << 'bla'; }"""
 
 
 SOURCE_CODE_6 = """foo = (a > b) ? 1 : 0; bar = (b > a) ? 0 : 1"""
@@ -96,9 +97,27 @@ SOURCE_CODE_12 = """if(a>0){
                     }"""
 
 
+SOURCE_CODE_13 = """int bla = 0;
+                    vector<int> bla;
 
-def _create_unigrams(train):
-    joined_sc = " ".join(train)
+                    int foo(int a=5, int b , int c)
+
+                    string a = "dino";
+
+                    vector<int>a(10);
+
+                    std::vector<int>a(10);
+
+                    for(int i = 0; i < 10; ++i){
+                        int b = 0;
+                    }"""
+
+
+SOURCE_CODE_14 = """int a += 5; ++b; ++i; c -= 6;"""
+
+
+def _create_unigrams(train_code):
+    joined_sc = " ".join(train_code)
 
     tokens = re.split('\s+', joined_sc)
     frequencies = Counter(tokens)
@@ -106,18 +125,37 @@ def _create_unigrams(train):
     return frequencies.keys()
 
 
-def test_cpp_lf_get_features_returns_correct_set_of_features():
-    unigrams = _create_unigrams([SOURCE_CODE_4, SOURCE_CODE_5])
-    cpp_lf = CppLexicalFeatures([SOURCE_CODE_4, SOURCE_CODE_5], [], unigrams)
+def _get_variable_names(train_code):
+        joined_sc = " ".join(train_code)
 
-    features, _ = cpp_lf.get_features()
+        variables = re.findall('(?:const){0,1}(?:std::){0,1}(?:vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<){0,1}[\s]*(?:int|float|long|long long|double|char|string)[\s]*[>]{0,1}[\s]*[a-zA-Z][A-Za-z0-9|_]*[\s]*[\(]{0,1}[=]*[\s]*[\"\'0-9a-zA-Z]*[\s]*[;|,|\)]', joined_sc, re.DOTALL)
 
-    assert features == [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), 
-                        0, 0, 0, 0, math.log(1. / len(SOURCE_CODE_4)), math.log(6. / len(SOURCE_CODE_4)),
-                        len(SOURCE_CODE_4), 0, 0, 0], 
-                        [1, 1, 0, 1, 1, 1, 1, 0, math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, 0, 0, 0, 
-                        math.log(1. / len(SOURCE_CODE_5)), 0, 0, 0, math.log(1. / len(SOURCE_CODE_5)), 0,
-                        math.log(6. / len(SOURCE_CODE_5)), len(SOURCE_CODE_5), 0, 0, 0]]
+        variable_names = []
+        for var in variables:
+            if '=' in var:
+                var_split = var.split('=')
+                var_name = var_split[0].split()[1]
+                var_name = var_name.strip()
+                variable_names.append(var_name)
+
+            elif '>' in var:
+                var_split = var.split('>')
+                if '(' in var_split[1]:
+                    var_name = var_split[1].split('(')[0].strip()
+                else:
+                    var_name = var_split[1].split(';')[0]
+                
+                var_name = var_name.strip()
+                variable_names.append(var_name)
+            
+            else:
+                var_split = var.split()
+                var_name = var_split[1].strip(',')
+                var_name = var_name.strip(')')
+                var_name = var_name.strip('(')
+                variable_names.append(var_name)
+        
+        return variable_names
 
 
 def test_cpp_layf_get_features_returns_correct_set_of_features():
@@ -284,3 +322,23 @@ def test_cpp_layf_tabs_lead_line_with_greater_number_of_spaces_at_beginning_retu
     tabs_lead_lines = cpp_layf.tabs_lead_lines(SOURCE_CODE_12)
 
     assert not tabs_lead_lines
+
+
+def test_cpp_lf_variable_names_returns_correct_freq_of_variable_names():
+    g_variable_names = _get_variable_names([SOURCE_CODE_13])
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_13], [], variable_names=g_variable_names)
+    
+
+    variable_freq = cpp_lf.variable_freq(SOURCE_CODE_13)
+
+    assert variable_freq == [4, 1, 1, 2, 2]
+
+
+def test_cpp_lf_operators_returns_correct_number_of_operators():
+    cpp_lf = CppLexicalFeatures([SOURCE_CODE_14], [])
+
+    operators = cpp_lf.operators(SOURCE_CODE_14)
+
+    print operators
+
+    assert operators == math.log(4. / len(SOURCE_CODE_14))

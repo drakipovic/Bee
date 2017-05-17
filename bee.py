@@ -8,6 +8,7 @@ import numpy as np
 from feature_extraction import FeatureExtractor
 from train.random_forest import RandomForest
 
+
 ALGORITHMS = {'random-forest': RandomForest}
 
 
@@ -57,6 +58,7 @@ def create_accuracies_markdown_table(accuracies, n_trees):
 def train(ml_algorithm, source_code, labels):
     source_code = np.array(source_code)
     labels = np.array(labels)
+    print len(source_code)
 
     try:
         algorithm_type = ALGORITHMS[ml_algorithm]
@@ -64,8 +66,8 @@ def train(ml_algorithm, source_code, labels):
         print 'Algorithm type not valid!'
         return
 
-    n_trees = [50, 100, 150, 200, 250, 300, 350, 400, 500, 800, 1000, 2000]
-    variance_threshold = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8]
+    n_trees = [400]
+    variance_threshold = [0.08]
     data = defaultdict(list)
     
     for nt in n_trees:
@@ -83,15 +85,17 @@ def train(ml_algorithm, source_code, labels):
                 it = code_per_author / k
                 for j in range(it):
                     test_indices.extend(np.array(range(i*it+j, len(source_code), code_per_author)))
-                
+                    
                 train_indices = []
                 for sci in range(len(source_code)):
                     if sci not in test_indices:
                         train_indices.append(sci)
                 
+
                 train_features, test_features = FeatureExtractor.get_features(source_code[train_indices], source_code[test_indices])
                 
                 score = mla.train(train_features, test_features, labels[train_indices], labels[test_indices])
+                print 'Score after {}th fold is {}'.format(i, score)
                 accuracy += score
             
             print 'Final score: {}'.format(accuracy / float(k))

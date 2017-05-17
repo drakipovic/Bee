@@ -20,25 +20,25 @@ class RandomForest(object):
         self.variance_threshold = variance_threshold
 
     def train(self, train_features, test_features, train_labels, test_labels):
-        # print 'Training started...'
-        #print 'Train feature vector has length of {}'.format(np.array(train_features).shape)
+        print 'Training started...'
+        print 'Train feature vector has length of {}'.format(np.array(train_features).shape)
         fs = VarianceThreshold(threshold=self.variance_threshold)
         train_features = fs.fit_transform(train_features)
         np.set_printoptions(threshold='nan')
         support = fs.get_support(indices=True)
 
-        #print 'Feature vector after feature selection has length of {}'.format(np.array(train_features).shape)
-        # print 'Creating one hot vector from train labels.'
+        print 'Feature vector after feature selection has length of {}'.format(np.array(train_features).shape)
+        print 'Creating one hot vector from train labels.'
         train_author_indices = self.create_author_indices(train_labels)
-        # print 'One hot vector created.'
-        # print 'Fitting random forest...'
+        print 'One hot vector created.'
+        print 'Fitting random forest...'
         self.rf.fit(train_features, train_author_indices)
 
-       # print 'Predicting authors on test set.'
+        print 'Predicting authors on test set.'
         test_features = np.array(test_features)[:,np.array(support)]
-       # print 'Test feature vector has length of {}'.format(np.array(test_features).shape)
+        print 'Test feature vector has length of {}'.format(np.array(test_features).shape)
         predicted_authors_indices = self.rf.predict(test_features)
-     #   print predicted_authors_indices
+        print predicted_authors_indices
 
         test_authors_indices = self.create_author_indices(test_labels)
         
