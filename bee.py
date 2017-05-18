@@ -80,8 +80,8 @@ def train(ml_algorithm, source_code, labels, ast_nodes):
     start = time.time()
 
     mla = algorithm_type(variance_threshold=0.08)
-    k = 5
-    code_per_author = 5
+    k = 10
+    code_per_author = 10
     accuracy = 0
     
     for i in range(k):

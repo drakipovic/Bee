@@ -35,19 +35,20 @@ class LanguageFeatureExtractor(object):
     #returns feature vector for a language
     @property
     def features(self):
-        # train_lexical_features, test_lexical_features = self.feature_extractor.lexical_features
-        # train_layout_features, test_layout_features = self.feature_extractor.layout_features
-        
-        # for idx, lf in enumerate(train_lexical_features):
-        #     lf.extend(train_layout_features[idx])
-        
-        # for idx, lf in enumerate(test_lexical_features):
-        #     lf.extend(test_layout_features[idx])
+        train_lexical_features, test_lexical_features = self.feature_extractor.lexical_features
+        train_layout_features, test_layout_features = self.feature_extractor.layout_features
+        train_syntactic_features, test_syntactic_features = self.feature_extractor.syntactic_features
 
-        # return train_lexical_features, test_lexical_features
 
-        self.feature_extractor.syntactic_features
-        return None
+        for idx, lf in enumerate(train_lexical_features):
+            lf.extend(train_layout_features[idx])
+            lf.extend(train_syntactic_features[idx])
+        
+        for idx, lf in enumerate(test_lexical_features):
+            lf.extend(test_layout_features[idx])
+            lf.extend(test_syntactic_features[idx])
+
+        return train_lexical_features, test_lexical_features
 
 
 class CppFeatureExtractor(object):

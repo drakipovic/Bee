@@ -7,6 +7,7 @@ import numpy as np
 from feature_extraction import CppFeatureExtractor
 from feature_extraction.lexical_features import CppLexicalFeatures
 from feature_extraction.layout_features import CppLayoutFeatures
+from feature_extraction.syntactic_features import CppSyntacticFeatures
 
 
 SOURCE_CODE_1 = """#include <cstdio>
@@ -114,6 +115,25 @@ SOURCE_CODE_13 = """int bla = 0;
 
 
 SOURCE_CODE_14 = """int a += 5; ++b; ++i; c -= 6;"""
+
+
+AST_NODES_1 = """VAR_DECL	17:8	17:23	2	pair < int , int > pii
+                 TYPE	17:8	17:8	3	pair < int , int >
+                 TYPE_NAME	17:8	17:21	4	pair < int , int >
+                 LEAF_NODE	17:8	17:8	5	pair
+                 LEAF_NODE	17:13	17:13	5	<
+                 LEAF_NODE	17:14	17:14	5	int
+                 LEAF_NODE	17:17	17:17	5	,
+                 LEAF_NODE	17:18	17:18	5	int
+                 LEAF_NODE	17:21	17:21	5	>
+                 NAME	17:23	17:23	3	pii
+                 LEAF_NODE	17:23	17:23	4	pii
+                 LEAF_NODE	17:26	17:26	2	;
+                 SIMPLE_DECL	22:0	22:9	1	int n , int m , int l ;
+                 INIT_DECL_LIST	22:0	22:0	2	int n , int m , int l
+                 INIT_DECL_LIST	22:0	22:0	4	int n , int m , int l"""
+
+AST_NODES_2 = """KEYWORD	39:1	39:1	4	if"""
 
 
 def _create_unigrams(train_code):
@@ -342,3 +362,32 @@ def test_cpp_lf_operators_returns_correct_number_of_operators():
     print operators
 
     assert operators == math.log(4. / len(SOURCE_CODE_14))
+
+
+def test_cpp_sf_average_node_depth_returns_correct_avg_depths():
+    cpp_sf = CppSyntacticFeatures([], [])
+
+    avg_depths = cpp_sf.average_node_depth(AST_NODES_1)
+
+    assert avg_depths == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 
+                          0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 4, 0, 0, 0, 0, 2]
+
+
+def test_cpp_sf_max_node_depth_returns_correct_depth():
+    cpp_sf = CppSyntacticFeatures([], [])
+
+    max_depth = cpp_sf.maximum_node_depth(AST_NODES_1)
+
+    assert max_depth == 4
+
+
+def test_cpp_sf_keywords_returns_correct_keywords_freq():
+    cpp_sf = CppSyntacticFeatures([], [])
+
+    freq = cpp_sf.keywords(AST_NODES_2)
+
+    assert freq == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
