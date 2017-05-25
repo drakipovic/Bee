@@ -15,61 +15,73 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 ALGORITHMS = {'random-forest': RandomForest, 'svm': SVM}
 
 
-def extract_and_read_train_files(dataset_filename):
-    print 'Extracting {}'.format(dataset_filename)
+def extract_and_read_source_files(train_filename, test_filename=None):
+    print 'Extracting {}'.format(train_filename)
 
-    os.system('mkdir dataset')
-    os.system('unzip -q {} -d dataset'.format(dataset_filename))
+    os.system('mkdir train_files')
+    os.system('unzip -q {} -d train_files'.format(train_filename))
 
-    source_code = []
-    labels = []
+    train_source_code = []
+    train_labels = []
     ast_nodes = []
 
-    for filename in sorted(os.listdir('dataset')):
+    for filename in sorted(os.listdir('train_files')):
         filename_split = filename.split('_')
         if 'cpp' not in filename_split[-1] and 'cxx' not in filename_split[-1]:
             continue
         
         author = "{} {}".format(filename_split[0].encode('utf-8'), filename_split[1].encode('utf-8'))
-        labels.append(author)
-        with open(basedir + '/dataset/' + filename, 'r') as f:
-            source_code.append(f.read())
+        train_labels.append(author)
+        with open(basedir + '/train_files/' + filename, 'r') as f:
+            train_source_code.append(f.read())
 
-        ast_nodes.append(subprocess.check_output(['java', '-jar', 'CodeSensor.jar', basedir + '/dataset/' + filename]))
+        #ast_nodes.append(subprocess.check_output(['java', '-jar', 'CodeSensor.jar', basedir + '/dataset/' + filename]))
 
     
-    os.system('rm -rf dataset')
+    os.system('rm -rf train_files')
 
-    return source_code, labels, ast_nodes
-
-
-def create_accuracies_markdown_table(accuracies, n_trees):
-    markdown = '| Variance Threshold '
-    for nt in n_trees:
-        markdown += '| {} trees '.format(nt)
+    print 'Extracting {}'.format(test_filename)
     
-    markdown += '\n'
-    
-    markdown += '| :---: '
-    for nt in n_trees:
-        markdown += '| --- '
-    
-    markdown += '\n'
+    test_source_code = []
+    test_labels = []
+    if test_filename:
+        os.system('mkdir test_files')
+        os.system('unzip -q {} -d test_files'.format(test_filename))
 
-    for vt in sorted(accuracies.keys()):
-        markdown += '| **{}** '.format(vt)
-        for acc, t in accuracies[vt]:
-            markdown += '| {:.3f}% {:.1f}s '.format(float(acc), float(t))
+        for filename in sorted(os.listdir('test_files')):
+            filename_split = filename.split('_')
+            if 'cpp' not in filename_split[-1] and 'cxx' not in filename_split[-1]:
+                continue
+            
+            author = "{} {}".format(filename_split[0].encode('utf-8'), filename_split[1].encode('utf-8'))
+            test_labels.append(author)
+            with open(basedir + '/test_files/' + filename, 'r') as f:
+                test_source_code.append(f.read())
         
-        markdown += '\n'
-    
-    return markdown
-    
+        os.system('rm -rf test_files')
 
-def train(ml_algorithm, source_code, labels, ast_nodes):
+    return train_source_code, train_labels, test_source_code, test_labels
+
+
+def train(ml_algorithm, train_files, train_labels, test_files, test_labels):
+    train_features, test_features = FeatureExtractor.get_features(train_files, test_files)
+
+    try:
+        algorithm_type = ALGORITHMS[ml_algorithm]
+    except KeyError:
+        print 'Algorithm type not valid!'
+        return
+    
+    mla = algorithm_type(n_trees=400)
+
+    score = mla.train(train_features, test_features, train_labels, test_labels)
+
+    print 'Score: {}'.format(score)
+
+def train_kfold(ml_algorithm, source_code, labels, ast_nodes=None):
     source_code = np.array(source_code)
     labels = np.array(labels)
-    ast_nodes = np.array(ast_nodes)
+    #ast_nodes = np.array(ast_nodes)
 
     try:
         algorithm_type = ALGORITHMS[ml_algorithm]
@@ -79,49 +91,55 @@ def train(ml_algorithm, source_code, labels, ast_nodes):
 
     start = time.time()
 
-    mla = algorithm_type(variance_threshold=0.08)
-    k = 10
-    code_per_author = 10
-    accuracy = 0
-    
-    for i in range(k):
-        test_indices = []
-        it = code_per_author / k
-        for j in range(it):
-            test_indices.extend(np.array(range(i*it+j, len(source_code), code_per_author)))
-            
-        train_indices = []
-        for sci in range(len(source_code)):
-            if sci not in test_indices:
-                train_indices.append(sci)
+    n_trees = [400]
 
-        train_features, test_features = FeatureExtractor.get_features(source_code[train_indices],
-                                                                        source_code[test_indices], 
-                                                                        ast_nodes[train_indices],
-                                                                        ast_nodes[test_indices])
+    for nt in n_trees:
+        mla = algorithm_type(n_trees=nt)
+        print 'nt: {}'.format(nt)
+        k = 10
+        code_per_author = 10
+        accuracy = 0
         
-        score = mla.train(train_features, test_features, labels[train_indices], labels[test_indices])
-        print 'Score after {}th fold is {}'.format(i, score)
-        accuracy += score
+        for i in range(k):
+            test_indices = []
+            it = code_per_author / k
+            for j in range(it):
+                test_indices.extend(np.array(range(i*it+j, len(source_code), code_per_author)))
+                
+            train_indices = []
+            for sci in range(len(source_code)):
+                if sci not in test_indices:
+                    train_indices.append(sci)
+
+            train_features, test_features = FeatureExtractor.get_features(source_code[train_indices],
+                                                                            source_code[test_indices])
             
-    print 'Final score: {}'.format(accuracy / float(k))
-    end = time.time() - start
-    print 'Execution time: {}'.format(end)
-    print '-----------------------------------------------'
+            score = mla.train(train_features, test_features, labels[train_indices], labels[test_indices])
+            print 'Score after {}th fold is {}'.format(i, score)
+            accuracy += score
+                
+        print 'Final score: {}'.format(accuracy / float(k))
+        end = time.time() - start
+        print 'Execution time: {}'.format(end)
+        print '-----------------------------------------------'
 
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run deanonymization bee')
 
-    parser.add_argument('--dataset', help="Dataset")
+    parser.add_argument('--train_set', help="Train set")
+    parser.add_argument('--test_set', help="Test set")
 
     args = parser.parse_args()
 
-    dataset_filename = args.dataset
+    train_filename = args.train_set
+    test_filename = args.test_set
 
-    if 'zip' in dataset_filename:
-        source_code, labels, ast_nodes = extract_and_read_train_files(dataset_filename)
-        train('random-forest', source_code, labels, ast_nodes)
+    if test_filename:
+        train_source_code, train_labels, test_source_code, test_labels = extract_and_read_source_files(train_filename, test_filename)
+        train('random-forest', train_source_code, train_labels, test_source_code, test_labels)
+    
     else:
-        print 'File can only be zip!'
+        train_source_code, train_labels, _, _ = extract_and_read_source_files(train_filename)
+        train_kfold('random-forest', train_source_code, train_labels)

@@ -1,5 +1,5 @@
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from copy import deepcopy
 
 from lexical_features import CppLexicalFeatures
@@ -15,20 +15,17 @@ class FeatureExtractor(object):
     
     #returns lexical, layout and syntactic feature vector for a given language
     @staticmethod
-    def get_features(train_source_code, test_source_code, ast_train, ast_test):
-        return LanguageFeatureExtractor('cpp', train_source_code, test_source_code, 
-                                                        ast_train, ast_test).features
+    def get_features(train_source_code, test_source_code, ast_train=None, ast_test=None):
+        return LanguageFeatureExtractor('cpp', train_source_code, test_source_code).features
 
 
 class LanguageFeatureExtractor(object):
     """Base class for extracting feature vector for different programming languages"""
 
-    def __init__(self, language, train_source_code, test_source_code, ast_train, ast_test):
+    def __init__(self, language, train_source_code, test_source_code, ast_train=None, ast_test=None):
         try:
-            self.feature_extractor = LANGUAGE_EXTRACTORS[language](train_source_code, 
-                                                                    test_source_code,
-                                                                    ast_train,
-                                                                    ast_test)
+            self.feature_extractor = LANGUAGE_EXTRACTORS[language](train_source_code, test_source_code)
+                                                
         except KeyError:
             raise LanguageNotSupportedException
         
@@ -37,29 +34,31 @@ class LanguageFeatureExtractor(object):
     def features(self):
         train_lexical_features, test_lexical_features = self.feature_extractor.lexical_features
         train_layout_features, test_layout_features = self.feature_extractor.layout_features
-        train_syntactic_features, test_syntactic_features = self.feature_extractor.syntactic_features
+        #train_syntactic_features, test_syntactic_features = self.feature_extractor.syntactic_features
 
 
         for idx, lf in enumerate(train_lexical_features):
             lf.extend(train_layout_features[idx])
-            lf.extend(train_syntactic_features[idx])
+            #lf.extend(train_syntactic_features[idx])
         
         for idx, lf in enumerate(test_lexical_features):
             lf.extend(test_layout_features[idx])
-            lf.extend(test_syntactic_features[idx])
+            #lf.extend(test_syntactic_features[idx])
 
         return train_lexical_features, test_lexical_features
 
 
 class CppFeatureExtractor(object):
 
-    def __init__(self, train_source_code, test_source_code, ast_train, ast_test):
+    def __init__(self, train_source_code, test_source_code, ast_train=None, ast_test=None):
         self.train_source_code = train_source_code
         self.test_source_code = test_source_code
         self.unigrams = self._get_word_unigrams()
         self.variable_names = self._get_variable_names()
-        self.ast_train = ast_train
-        self.ast_test = ast_test
+        # self.ast_train = ast_train
+        # self.ast_test = ast_test
+        # self.ast_leaf_values = self._get_leaf_values(ast_train)
+        # self.authors_freq_per_leaf_node = self._authors_per_leaf_node(ast_train)
 
     @property
     def lexical_features(self):
@@ -72,7 +71,47 @@ class CppFeatureExtractor(object):
     
     @property
     def syntactic_features(self):
-        return CppSyntacticFeatures(self.ast_train, self.ast_test).get_features()
+        return CppSyntacticFeatures(self.ast_train, self.ast_test, 
+                                    self.ast_leaf_values, self.authors_freq_per_leaf_node).get_features()
+
+    def _get_leaf_values(self, ast_train):
+        leaf_values = {}
+        
+        for ast in ast_train:
+            ast_nodes = ast.split('\n')
+
+            for node in ast_nodes:
+                node = node.strip()
+                
+                data = node.split('\t')
+                
+                node_type = data[0]
+                if node_type == 'LEAF_NODE':
+                    leaf_values[data[4]] = 1
+        
+        return leaf_values
+    
+    def _authors_per_leaf_node(self, ast_train):
+        authors_freq_per_leaf_node = defaultdict(int)
+
+        for ast in ast_train:
+            ast_nodes = ast.split('\n')
+
+            author_val = set()
+            for node in ast_nodes:
+                node = node.strip()
+
+                data = node.split('\t')
+
+                node_type = data[0]
+                if node_type == 'LEAF_NODE':
+                    val = data[4]
+                    author_val.add(val)
+            
+            for v in author_val:
+                authors_freq_per_leaf_node[v] += 1
+
+        return authors_freq_per_leaf_node
 
     def _get_word_unigrams(self):
         joined_sc = " ".join(self.train_source_code)

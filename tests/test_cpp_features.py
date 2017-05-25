@@ -1,6 +1,6 @@
 import math
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -133,7 +133,53 @@ AST_NODES_1 = """VAR_DECL	17:8	17:23	2	pair < int , int > pii
                  INIT_DECL_LIST	22:0	22:0	2	int n , int m , int l
                  INIT_DECL_LIST	22:0	22:0	4	int n , int m , int l"""
 
-AST_NODES_2 = """KEYWORD	39:1	39:1	4	if"""
+AST_NODES_2 = """KEYWORD	39:1	39:1	4	if
+                 LEAF_NODE	17:8	17:8	5	pair
+                 LEAF_NODE	17:13	17:13	5	<
+                 LEAF_NODE	17:14	17:14	5	int
+                 LEAF_NODE	17:17	17:17	5	,
+                 LEAF_NODE	17:18	17:18	5	int"""
+
+
+def authors_per_leaf_node(ast_train):
+    authors_freq_per_leaf_node = defaultdict(int)
+
+    for ast in ast_train:
+        ast_nodes = ast.split('\n')
+
+        author_val = set()
+        for node in ast_nodes:
+            node = node.strip()
+
+            data = node.split('\t')
+
+            node_type = data[0]
+            if node_type == 'LEAF_NODE':
+                val = data[4]
+                author_val.add(val)
+        
+        for v in author_val:
+            authors_freq_per_leaf_node[v] += 1
+
+    return authors_freq_per_leaf_node
+
+
+def get_leaf_values(ast_train):
+    leaf_values = {}
+
+    for ast in ast_train:
+        ast_nodes = ast.split('\n')
+
+        for node in ast_nodes:
+            node = node.strip()
+
+            data = node.split('\t')
+
+            node_type = data[0]
+            if node_type == 'LEAF_NODE':
+                leaf_values[data[4]] = 1
+
+    return leaf_values
 
 
 def _create_unigrams(train_code):
@@ -364,30 +410,78 @@ def test_cpp_lf_operators_returns_correct_number_of_operators():
     assert operators == math.log(4. / len(SOURCE_CODE_14))
 
 
-def test_cpp_sf_average_node_depth_returns_correct_avg_depths():
-    cpp_sf = CppSyntacticFeatures([], [])
 
-    avg_depths = cpp_sf.average_node_depth(AST_NODES_1)
+# def test_cpp_sf_average_node_depth_returns_correct_avg_depths():
+#     cpp_sf = CppSyntacticFeatures([], [])
 
-    assert avg_depths == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 
-                          0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 4, 0, 0, 0, 0, 2]
+#     avg_depths = cpp_sf.average_node_depth(AST_NODES_1)
 
-
-def test_cpp_sf_max_node_depth_returns_correct_depth():
-    cpp_sf = CppSyntacticFeatures([], [])
-
-    max_depth = cpp_sf.maximum_node_depth(AST_NODES_1)
-
-    assert max_depth == 4
+#     assert avg_depths == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 3, 0, 0, 0, 
+#                           0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 3, 0, 4, 0, 0, 0, 0, 2]
 
 
-def test_cpp_sf_keywords_returns_correct_keywords_freq():
-    cpp_sf = CppSyntacticFeatures([], [])
+# def test_cpp_sf_max_node_depth_returns_correct_depth():
+#     cpp_sf = CppSyntacticFeatures([], [])
 
-    freq = cpp_sf.keywords(AST_NODES_2)
+#     max_depth = cpp_sf.maximum_node_depth(AST_NODES_1)
 
-    assert freq == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
-                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+#     assert max_depth == 4
+
+
+# def test_cpp_sf_keywords_returns_correct_keywords_freq():
+#     cpp_sf = CppSyntacticFeatures([], [])
+
+#     freq = cpp_sf.keywords(AST_NODES_2)
+
+#     assert freq == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+#                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 
+#                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+
+# def test_cpp_sf_leaf_values_freq_returns_correct_freq():
+#     lv = get_leaf_values([AST_NODES_1])
+#     cpp_sf = CppSyntacticFeatures([AST_NODES_1], [], lv)
+
+#     freq = cpp_sf.leaf_values_freq(AST_NODES_1)
+
+#     assert freq == [1, 2, 1, 1, 1, 1, 1]
+
+
+# def test_cpp_sf_leaf_values_depths_returns_correct_avg_depth():
+#     lv = get_leaf_values([AST_NODES_1])
+#     cpp_sf = CppSyntacticFeatures([AST_NODES_1], [], lv)
+
+#     avg_depths = cpp_sf.leaf_values_avg_depth(AST_NODES_1)
+
+#     assert avg_depths == [4.0, 5.0, 5.0, 5.0, 2.0, 5.0, 5.0]
+
+
+# def test_cpp_sf_inverse_leaf_values_returns_correct_tfidf():
+#     lv = get_leaf_values([AST_NODES_1, AST_NODES_2])
+#     aplv = authors_per_leaf_node([AST_NODES_1, AST_NODES_2])
+#     cpp_sf = CppSyntacticFeatures([AST_NODES_1, AST_NODES_2], [], lv, aplv)
+
+#     inverse = cpp_sf.inverse_leaf_values_freq(AST_NODES_1)
+
+#     assert inverse == [2, 2, 1, 1, 2, 1, 2]
+
+
+# def test_cpp_sf_node_type_freq_returns_correct_tf():
+#     cpp_sf = CppSyntacticFeatures([AST_NODES_1], [])
+
+#     node_type_freq = cpp_sf.node_type_freq(AST_NODES_1)
+
+#     assert node_type_freq == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 
+#                               0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0]
+
+# def test_cpp_sf_node_type_freq_inverse_returns_correct_tfidf():
+#     cpp_sf = CppSyntacticFeatures([AST_NODES_1], [])
+
+#     node_type_freq_inv = cpp_sf.node_type_freq_inverse(AST_NODES_1)
+
+#     assert node_type_freq_inv == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 0, 0, 
+#                                   0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0]
