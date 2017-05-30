@@ -72,11 +72,14 @@ def train(ml_algorithm, train_files, train_labels, test_files, test_labels):
         print 'Algorithm type not valid!'
         return
     
-    mla = algorithm_type(n_trees=400)
+    mla = algorithm_type()
 
-    score = mla.train(train_features, test_features, train_labels, test_labels)
+    score, indices, probs = mla.fit_and_predict(train_features, test_features, train_labels, test_labels)
 
     print 'Score: {}'.format(score)
+
+    return indices, probs
+
 
 def train_kfold(ml_algorithm, source_code, labels, ast_nodes=None):
     source_code = np.array(source_code)
@@ -133,8 +136,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train_filename = args.train_set
-    test_filename = args.test_set
+    train_filename = 'files/{}'.format(args.train_set)
+    test_filename = 'files/{}'.format(args.test_set)
 
     if test_filename:
         train_source_code, train_labels, test_source_code, test_labels = extract_and_read_source_files(train_filename, test_filename)
