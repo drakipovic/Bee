@@ -1,4 +1,4 @@
-import pprint
+import os
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
@@ -6,9 +6,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC, SVC
 from sklearn.feature_selection import SelectFromModel, VarianceThreshold
 from sklearn.metrics import accuracy_score
-
-
-pp = pprint.PrettyPrinter(indent=2)
+from sklearn.externals import joblib
 
 
 class RandomForest(object):
@@ -21,6 +19,24 @@ class RandomForest(object):
                                                         oob_score=True, 
                                                         min_samples_leaf=1))
         ])
+
+    def fit(self, train_features, train_labels, name):
+        train_author_indices = self.create_author_indices(train_labels)
+
+        self.clf.fit(train_features, train_author_indices)
+
+        joblib.dump(self.clf, 'trained_classificators/{}.pkl'.format(name))
+        
+    def predict(self, test_features, name):
+        self.clf = joblib.load('trained_classificators/{}.pkl'.format(name))
+
+        authors_prob = self.clf.predict_proba(test_features)
+
+        k = 3
+        prob_ind = np.argpartition(authors_prob, -k, axis=1)[:,range(-k, 0)]
+        highest_scores = authors_prob[np.array([[i]*k for i in range(prob_ind.shape[0])]), prob_ind]
+
+        return prob_ind, highest_scores
 
     def fit_and_predict(self, train_features, test_features, train_labels, test_labels):
         

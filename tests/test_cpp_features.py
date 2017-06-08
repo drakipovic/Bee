@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 
 import numpy as np
 
-from feature_extraction import CppFeatureExtractor
+from feature_extraction.feature_extractor import CppFeatureExtractor
 from feature_extraction.lexical_features import CppLexicalFeatures
 from feature_extraction.layout_features import CppLayoutFeatures
 from feature_extraction.syntactic_features import CppSyntacticFeatures
