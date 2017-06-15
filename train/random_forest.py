@@ -45,17 +45,13 @@ class RandomForest(object):
         self.clf.fit(train_features, train_author_indices)
 
         predicted_authors_indices = self.clf.predict(test_features)
-        authors_prob = self.clf.predict_proba(test_features)
-
-        k = 3
-        prob_ind = np.argpartition(authors_prob, -k, axis=1)[:,range(-k, 0)]
-        highest_scores = authors_prob[np.array([[i]*k for i in range(prob_ind.shape[0])]), prob_ind]
+        authors_prob = self.clf.predict(test_features)
 
         test_authors_indices = self.create_author_indices(test_labels)
         
         accuracy = accuracy_score(test_authors_indices, predicted_authors_indices)
         
-        return accuracy, prob_ind, highest_scores
+        return accuracy
 
     def create_author_indices(self, authors):
         self.seen = {}

@@ -31,7 +31,6 @@ class CppLexicalFeatures(object):
             code_features.append(self.tokens(code))
             code_features.extend(self.line_length_measures(code))
             code_features.extend(self.function_parameters_measures(code))
-            #code_features.extend(self.variable_freq(code))
             code_features.append(self.operators(code))
 
             train_features.append(code_features)
@@ -50,7 +49,6 @@ class CppLexicalFeatures(object):
             code_features.append(self.tokens(code))
             code_features.extend(self.line_length_measures(code))
             code_features.extend(self.function_parameters_measures(code))
-            #code_features.extend(self.variable_freq(code))
             code_features.append(self.operators(code))
 
             test_features.append(code_features)
@@ -172,70 +170,6 @@ class CppLexicalFeatures(object):
         stddev_parameters = np.std(parameters_length) if len(parameters_length) > 0 else 0
 
         return [avg_parameters, stddev_parameters]
-    
-    #returns freq of variable names
-    def variable_freq(self, source_code):
-        variables = re.findall('(?:const){0,1}(?:std::){0,1}(?:vector<|set<|list<|map<|unordered_map<|queue<|deque<|pair<|priority_queue<){0,1}[\s]*(?:int|float|long|long long|double|char|string)[\s]*[>]{0,1}[\s]*[a-zA-Z][A-Za-z0-9|_]*[\s]*[\(]{0,1}[=]*[\s]*[\"\'0-9a-zA-Z]*[\s]*[;|,|\)]', source_code, re.DOTALL)
-
-        variable_names = []
-        for var in variables:
-            if '=' in var:
-                var_split = var.split('=')
-                try:
-                    var_name = var_split[0]
-                except IndexError:
-                    continue
-                
-                try:
-                    var_name = var_split[0].split()[1]
-                except IndexError:
-                    continue
-                
-                var_name = var_name.strip()
-                variable_names.append(var_name)
-
-            elif '>' in var:
-                var_split = var.split('>')
-                if '(' in var_split[1]:
-                    try:
-                        var_name = var_split[1].split('(')[0].strip()
-                    except IndexError:
-                        continue
-
-                else:
-                    try:
-                        var_name = var_split[1].split(';')[0]
-                    except IndexError:
-                        continue
-
-                var_name = var_name.strip()
-                variable_names.append(var_name)
-            
-            else:
-                var_split = var.split()
-                try:
-                    var_name = var_split[1]
-                except IndexError:
-                    continue
-                
-                try:
-                    var_name = var_split[1].strip(',')
-                except IndexError:
-                    continue
-                    
-                var_name = var_name.strip(')')
-                var_name = var_name.strip('(')
-                variable_names.append(var_name)
-        
-        vn = {}
-        for var_name in self.variable_names:
-            vn[var_name] = 0
-        
-        for var_name in variable_names:
-            if var_name in self.variable_names:
-                vn[var_name] += 1
-
-        return vn.values()
 
     def operators(self, source_code):
         addition = len(re.findall('[a-zA-Z0-9_]+[\s]*\+[\s]*[=]{0,1}[\s]*[a-zA-Z0-9_]', source_code))

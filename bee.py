@@ -1,7 +1,6 @@
 import os
 import time
 import argparse
-import subprocess
 from collections import defaultdict
 
 import numpy as np
@@ -9,13 +8,14 @@ import numpy as np
 from feature_extraction import FeatureExtractor
 from train.random_forest import RandomForest
 from train.svm import SVM
+from create_ast import create_ast_data
 
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 ALGORITHMS = {'random-forest': RandomForest, 'svm': SVM}
 
 
-def extract_and_read_source_files(train_filename=None, test_filename=None):
+def extract_and_read_source_files(train_filename=None, test_filename=None, create_ast=False):
     ret = None
 
     if train_filename:
@@ -26,7 +26,6 @@ def extract_and_read_source_files(train_filename=None, test_filename=None):
 
         train_source_code = []
         train_labels = []
-        ast_nodes = []
 
         for filename in sorted(os.listdir('train_files')):
             filename_split = filename.split('_')
@@ -37,12 +36,13 @@ def extract_and_read_source_files(train_filename=None, test_filename=None):
             train_labels.append(author)
             with open(basedir + '/train_files/' + filename, 'r') as f:
                 train_source_code.append(f.read())
-
-            #ast_nodes.append(subprocess.check_output(['java', '-jar', 'CodeSensor.jar', basedir + '/dataset/' + filename]))
-
         
+
         ret = train_source_code, train_labels
-        os.system('rm -rf train_files')
+
+        if create_ast:
+            os.system('joern-parse train_files')
+            train_ast_data = create_ast_data('train_files')     
 
     test_source_code = []
     test_labels = []
@@ -62,10 +62,11 @@ def extract_and_read_source_files(train_filename=None, test_filename=None):
             with open(basedir + '/test_files/' + filename, 'r') as f:
                 test_source_code.append(f.read())
         
-        os.system('rm -rf test_files')
-
         ret = ret + (test_source_code, test_labels)
-    
+
+        if create_ast:
+            os.system('joern-parse test_files')
+
     return ret
 
 
@@ -80,17 +81,15 @@ def train_and_predict(ml_algorithm, train_files, train_labels, test_files, test_
     
     mla = algorithm_type()
 
-    score, indices, probs = mla.fit_and_predict(train_features, test_features, train_labels, test_labels)
+    score = mla.fit_and_predict(train_features, test_features, train_labels, test_labels)
 
     print 'Score: {}'.format(score)
 
-    return indices, probs
 
-
-def train_kfold(ml_algorithm, source_code, labels, ast_nodes=None):
+def train_kfold(ml_algorithm, source_code, labels, ast_data=None):
     source_code = np.array(source_code)
     labels = np.array(labels)
-    #ast_nodes = np.array(ast_nodes)
+    ast_data = np.array(ast_nodes)
 
     try:
         algorithm_type = ALGORITHMS[ml_algorithm]
@@ -121,7 +120,9 @@ def train_kfold(ml_algorithm, source_code, labels, ast_nodes=None):
                     train_indices.append(sci)
 
             train_features, test_features = FeatureExtractor.get_features(source_code[train_indices],
-                                                                            source_code[test_indices])
+                                                                            source_code[test_indices],
+                                                                            ast_data[train_indices],
+                                                                            ast_data[test_indices])
             
 
             score = mla.fit_and_predict(train_features, test_features, labels[train_indices], labels[test_indices])
@@ -176,5 +177,5 @@ if __name__ == '__main__':
         train_and_predict('random-forest', train_source_code, train_labels, test_source_code, test_labels)
     
     else:
-        train_source_code, train_labels = extract_and_read_source_files(args.train_set)
-        train_kfold('random-forest', train_source_code, train_labels)
+        source_code, labels, ast_data = extract_and_read_source_files(args.train_set, create_ast=True)
+        train_kfold('random-forest', source_code, labels, ast_data)

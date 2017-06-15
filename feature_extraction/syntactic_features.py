@@ -26,16 +26,15 @@ CPP_KEYWORDS = ["alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", 
 
 class CppSyntacticFeatures(object):
 
-    def __init__(self, ast_train, ast_test, ast_leaf_values=None, authors_per_leaf_val=None):
+    def __init__(self, ast_train, ast_test):
         self.ast_train = ast_train
         self.ast_test = ast_test
-        self.ast_leaf_values = ast_leaf_values
-        self.authors_per_leaf_val = authors_per_leaf_val
-        self.authors_per_node_type = self._authors_per_node_type()
-
+        print ast_train
+    
     def get_features(self):
         train_features = []
         test_features = []
+        return []
 
         for ast in self.ast_train:
             features = []
