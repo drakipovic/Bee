@@ -1,10 +1,11 @@
 import re
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from copy import deepcopy
 
 from lexical_features import CppLexicalFeatures
 from layout_features import CppLayoutFeatures
 from syntactic_features import CppSyntacticFeatures
+from keywords import NODE_TYPES
 
 
 class LanguageNotSupportedException(Exception):
@@ -37,7 +38,7 @@ class LanguageFeatureExtractor(object):
     def features(self):
         train_lexical_features, test_lexical_features = self.feature_extractor.lexical_features
         train_layout_features, test_layout_features = self.feature_extractor.layout_features
-        train_syntactic_features, test_syntactic_features = self.feature_extractor.syntactic_features
+        #train_syntactic_features, test_syntactic_features = self.feature_extractor.syntactic_features
 
 
         for idx, lf in enumerate(train_lexical_features):
@@ -59,11 +60,11 @@ class CppFeatureExtractor(object):
         self.unigrams = self._get_word_unigrams()
         self.ast_train = ast_train
         self.ast_test = ast_test
+        #self.node_bigrams = self._create_node_bigrams()
 
     @property
     def lexical_features(self):
-        return CppLexicalFeatures(self.train_source_code, self.test_source_code, 
-                                    self.unigrams, self.variable_names).get_features()
+        return CppLexicalFeatures(self.train_source_code, self.test_source_code, self.unigrams,).get_features()
     
     @property
     def layout_features(self):
@@ -71,7 +72,7 @@ class CppFeatureExtractor(object):
     
     @property
     def syntactic_features(self):
-        return CppSyntacticFeatures(self.ast_train, self.ast_test).get_features()
+        return CppSyntacticFeatures(self.ast_train, self.ast_test, self.node_bigrams).get_features()
 
     def _get_word_unigrams(self):
         joined_sc = " ".join(self.train_source_code)
@@ -81,6 +82,36 @@ class CppFeatureExtractor(object):
 
         return frequencies.keys()
     
+    def _create_node_bigrams(self):
+        bigrams = []
+        
+        for ast in self.ast_train:
+            edges = ast[0]
+            nodes = ast[1]
+
+            root = min(edges.keys())
+            
+            queue = deque([root])
+            visited = []
+
+            while len(queue) > 0:
+                curr = queue.popleft()
+
+                if curr in visited:
+                    continue
+                
+                visited.append(curr)
+                
+                for neighbor in edges.get(curr, []):
+                    if nodes[neighbor][0] in NODE_TYPES and nodes[curr][0] in NODE_TYPES:
+                        bigrams.append(nodes[curr][1] + '->' + nodes[neighbor][1])
+                    
+                    queue.append(neighbor)
+        
+        frequencies = Counter(bigrams)
+
+        return frequencies.keys()
+        
 
 LANGUAGE_EXTRACTORS = {
     'cpp': CppFeatureExtractor

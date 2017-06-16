@@ -6,11 +6,10 @@ from collections import Counter
 
 class CppLexicalFeatures(object):
 
-    def __init__(self, train_source_code, test_source_code, unigrams=None, variable_names=None):
+    def __init__(self, train_source_code, test_source_code, unigrams=None):
         self.train_source_code = train_source_code #list of source code for training
         self.test_source_code = test_source_code #list of source code for testing
         self.unigrams = unigrams
-        self.variable_names = variable_names
 
     def _ln(self, value, source_code_len):
         return math.log(float(value) / source_code_len) if value else 0

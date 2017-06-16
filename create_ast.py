@@ -3,16 +3,6 @@ import csv
 from collections import defaultdict
 
 
-class ASTNode(object):
-
-    def __init__(self, edge, node_type, node_data):
-        self.edge = edge
-        self.node_type = node_type
-        self.node_data = node_data
-
-    def __str__(self):
-        return str(self.edge) + '|' + self.node_type + '|' + self.node_data
-
 
 def create_ast_data(dirname):
     edges_list = []
@@ -36,7 +26,7 @@ def create_ast_data(dirname):
                 
                 edges[int(edge[0])].append(int(edge[1]))
 
-        nodes = []
+        nodes = defaultdict(tuple)
         with open('{}/{}/nodes.csv'.format(dirname, filename), 'r') as nodes_csv:
             nodes_reader = csv.reader(nodes_csv, delimiter='\t')
 
@@ -46,8 +36,7 @@ def create_ast_data(dirname):
                     f += 1
                     continue
             
-                ast_node = ASTNode(int(node[1]), node[2], node[3])
-                nodes.append(ast_node)
+                nodes[int(node[1])] = (node[2], node[3].replace(' ', ''))
         
         edges_list.append(edges)
         nodes_list.append(nodes)
