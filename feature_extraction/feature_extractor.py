@@ -60,7 +60,7 @@ class CppFeatureExtractor(object):
         self.unigrams = self._get_word_unigrams()
         self.ast_train = ast_train
         self.ast_test = ast_test
-        #self.node_bigrams = self._create_node_bigrams()
+        #self.node_bigrams, self.leaf_tf = self._create_tf()
 
     @property
     def lexical_features(self):
@@ -72,7 +72,7 @@ class CppFeatureExtractor(object):
     
     @property
     def syntactic_features(self):
-        return CppSyntacticFeatures(self.ast_train, self.ast_test, self.node_bigrams).get_features()
+        return CppSyntacticFeatures(self.ast_train, self.ast_test, self.node_bigrams, self.leaf_tf).get_features()
 
     def _get_word_unigrams(self):
         joined_sc = " ".join(self.train_source_code)
@@ -82,8 +82,9 @@ class CppFeatureExtractor(object):
 
         return frequencies.keys()
     
-    def _create_node_bigrams(self):
+    def _create_tf(self):
         bigrams = []
+        leaf_tf = []
         
         for ast in self.ast_train:
             edges = ast[0]
@@ -101,6 +102,8 @@ class CppFeatureExtractor(object):
                     continue
                 
                 visited.append(curr)
+                if edges.get(curr, []) == []:
+                    leaf_tf.append(nodes[curr][1])
                 
                 for neighbor in edges.get(curr, []):
                     if nodes[neighbor][0] in NODE_TYPES and nodes[curr][0] in NODE_TYPES:
@@ -108,9 +111,10 @@ class CppFeatureExtractor(object):
                     
                     queue.append(neighbor)
         
-        frequencies = Counter(bigrams)
+        bigram_frequencies = Counter(bigrams)
+        leaf_frequencies = Counter(leaf_tf)
 
-        return frequencies.keys()
+        return bigram_frequencies.keys(), leaf_frequencies.keys()
         
 
 LANGUAGE_EXTRACTORS = {

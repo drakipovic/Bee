@@ -45,5 +45,5 @@ def create_ast_data(dirname):
     for e, n in zip(edges_list, nodes_list):
         data.append((e, n))
 
-    
+    print 'ast data created'
     return data

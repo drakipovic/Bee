@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.svm import LinearSVC, SVC
 from sklearn.feature_selection import SelectFromModel, VarianceThreshold
@@ -13,15 +13,12 @@ class RandomForest(object):
 
     def __init__(self, n_trees=500, threshold=0, svc=True):
         if svc:
-            self.clf = Pipeline([
-                ('feature_selection', SelectFromModel(LinearSVC(penalty='l2'), threshold="mean")),
-                ('classification', RandomForestClassifier(n_estimators=n_trees, 
-                                                            n_jobs=-1, 
-                                                            oob_score=True, 
-                                                            min_samples_leaf=1))
-            ])
+            self.clf = RandomForestClassifier(n_estimators=n_trees, 
+                                                n_jobs=-1, 
+                                                oob_score=True, 
+                                                min_samples_leaf=1)
         else:
-            self.clf = RandomForestClassifier(n_estimators=n_trees, n_jobs=-1)
+            self.clf = RandomForestClassifier(n_estimators=n_trees, n_jobs=-1, oob_score=True)
             self.threshold = threshold
         
         self.svc = svc
@@ -52,14 +49,18 @@ class RandomForest(object):
             train_features = fs.fit_transform(train_features)
             support = fs.get_support(indices=True)
 
-        print np.array(train_features).shape
+        clf = ExtraTreesClassifier()
+        clf.fit(train_features, train_author_indices)
+        model = SelectFromModel(clf, prefit=True)
+        train_features = model.transform(train_features)
+        test_features = np.array(test_features)[:, np.array(model.get_support())]
+        
         self.clf.fit(train_features, train_author_indices)
 
         if not self.svc:
             test_features = np.array(test_features)[:,np.array(support)]
-
+        
         predicted_authors_indices = self.clf.predict(test_features)
-        print self.clf.named_steps['feature_selection'].get_support().shape
         test_authors_indices = self.create_author_indices(test_labels)
         
         accuracy = accuracy_score(test_authors_indices, predicted_authors_indices)

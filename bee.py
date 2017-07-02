@@ -76,8 +76,8 @@ def train_kfold(ml_algorithm, source_code, labels, ast_data=None):
 
     start = time.time()
 
-    n_trees = [250, 300, 350, 400]
-    vts = [0.0, 0.03, 0.06, 0.08, 0.1, 0.12, 0.15, 0.2, 0.4, 0.5]
+    n_trees = [200, 250, 300, 350, 400, 500]
+    vts = [0.03, 0.06, 0.08]
 
     for nt in n_trees:
         mla = algorithm_type(n_trees=nt)
@@ -104,7 +104,6 @@ def train_kfold(ml_algorithm, source_code, labels, ast_data=None):
             
 
             score = mla.fit_and_predict(train_features, test_features, labels[train_indices], labels[test_indices])
-            print 'Score after {}th fold is {}'.format(i, score)
             accuracy += score
                 
         print 'Final score: {}'.format(accuracy / float(k))
@@ -138,10 +137,12 @@ def train_kfold(ml_algorithm, source_code, labels, ast_data=None):
                 
 
                 score = mla.fit_and_predict(train_features, test_features, labels[train_indices], labels[test_indices])
+                print 'Score after {}th fold is {}'.format(i, score)
                 accuracy += score
                 
             print 'Final score: {}'.format(accuracy / float(k))
             end = time.time() - start
+            
             print 'Execution time: {}'.format(end)
             print '-----------------------------------------------'
 

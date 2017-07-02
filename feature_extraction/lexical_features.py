@@ -15,7 +15,6 @@ class CppLexicalFeatures(object):
         return math.log(float(value) / source_code_len) if value else 0
     
     def get_features(self):
-
         train_features = []
         for code in self.train_source_code:
             code_features = []
